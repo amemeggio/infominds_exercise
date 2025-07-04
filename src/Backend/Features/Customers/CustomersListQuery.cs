@@ -6,6 +6,7 @@ namespace Backend.Features.Customers;
 public class CustomerListQuery : IRequest<List<CustomerListQueryResponse>>
 {
     public string? Name { get; set; }
+    public string? Email { get; set; }
 }
 
 public class CustomerListQueryResponse
@@ -32,8 +33,14 @@ internal class CustomerListQueryHandler(BackendContext context) : IRequestHandle
     public async Task<List<CustomerListQueryResponse>> Handle(CustomerListQuery request, CancellationToken cancellationToken)
     {
         var query = context.Customers.AsQueryable();
+
+        // Apply Name filter if provided
         if (!string.IsNullOrEmpty(request.Name))
             query = query.Where(q => q.Name.ToLower().Contains(request.Name.ToLower()));
+
+        // Apply Email filter if provided
+        if (!string.IsNullOrEmpty(request.Email))
+            query = query.Where(q => q.Email.ToLower().Contains(request.Email.ToLower()));
 
         var data = await query.OrderBy(q => q.Name).ToListAsync(cancellationToken);
         var result = new List<CustomerListQueryResponse>();
