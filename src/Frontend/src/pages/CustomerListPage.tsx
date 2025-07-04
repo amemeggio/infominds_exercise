@@ -9,6 +9,7 @@ import {
   Typography,
   styled,
   tableCellClasses,
+  Button,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
@@ -31,14 +32,70 @@ export default function CustomerListPage() {
       })
       .then((data) => {
         setList(data as CustomerListQuery[]);
-      });
+      })
   }, []);
+
+  // function to escape 'special' XML characters
+  const escapeXml = (unsafe: string): string => {
+    return unsafe.replace(/[<>&'"]/g, function (c) {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+        default: return c;
+      }
+    });
+  };
+
+  // function to export xml with data from list
+  const exportToXml = () => {
+    if (list.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    let xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n<Customers>\n';
+
+    list.forEach((customer) => {
+      xmlString += '  <Customer>\n';
+      // Apply escapeXml to each data field
+      xmlString += `    <Id>${escapeXml(String(customer.id))}</Id>\n`;
+      xmlString += `    <Name>${escapeXml(customer.name)}</Name>\n`;
+      xmlString += `    <Address>${escapeXml(customer.address)}</Address>\n`;
+      xmlString += `    <Email>${escapeXml(customer.email)}</Email>\n`;
+      xmlString += `    <Phone>${escapeXml(customer.phone)}</Phone>\n`;
+      xmlString += `    <Iban>${escapeXml(customer.iban)}</Iban>\n`;
+      xmlString += '  </Customer>\n';
+    });
+
+    xmlString += '</Customers>';
+
+    const blob = new Blob([xmlString], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "customers.xml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
       <Typography variant="h4" sx={{ textAlign: "center", mt: 4, mb: 4 }}>
         Customers
       </Typography>
+
+      <Button
+        variant="contained"
+        onClick={exportToXml}
+        sx={{ mb: 2, ml: 2 }}
+      >
+        Export to XML
+      </Button>
 
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
