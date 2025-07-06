@@ -12,6 +12,8 @@ import {
   Button,
   TextField,
   Box,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useEffect, useState, useCallback } from "react";
 import { SkeletonTableRows } from "../components/SkeletonTableRows";
@@ -36,6 +38,8 @@ export default function CustomerListPage() {
   // before fetching data again)
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
 
   // Debounce search term with timeout
   useEffect(() => {
@@ -48,10 +52,11 @@ export default function CustomerListPage() {
     };
   }, [searchTerm]);
 
-
   useEffect(() => {
     const fetchCustomers = async () => {
       setLoading(true);
+      setError(null);
+      setSnackbarOpen(false);
       let url = "/api/customers/list";
       if (debouncedSearchTerm) {
         url = `/api/customers/list?SearchText=${encodeURIComponent(debouncedSearchTerm)}`;
@@ -59,11 +64,17 @@ export default function CustomerListPage() {
 
       try {
         const response = await fetch(url);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(`Failed to fetch customers: ${response.status} ${response.statusText} - ${errorData.message || 'Server error'}`);
+        }
         const data = await response.json();
         setList(data as CustomerListQuery[]);
       } catch (error) {
         console.error("Error fetching customer list:", error);
-        // Decide if display an error message to the user
+        setError("Error fetching customer list.");
+        // Open Snackbar on error
+        setSnackbarOpen(true);
         // Clear list on error
         setList([]);
       } finally {
@@ -74,6 +85,14 @@ export default function CustomerListPage() {
 
     fetchCustomers();
   }, [debouncedSearchTerm]);
+
+  // Handle Snackbar close event
+  const handleSnackbarClose = () => {
+    // hide SnackBar
+    setSnackbarOpen(false);
+    // Clear error message when snackbar closes
+    setError(null);
+  };
 
   // function to escape 'special' XML characters
   // (with useCallback to memoize the function)
@@ -191,6 +210,22 @@ export default function CustomerListPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity="error"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
