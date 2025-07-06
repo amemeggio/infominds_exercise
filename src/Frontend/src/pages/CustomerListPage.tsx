@@ -12,6 +12,7 @@ import {
   Button,
   TextField,
   Box,
+  Skeleton,
 } from "@mui/material";
 import { useEffect, useState, useCallback } from "react";
 
@@ -33,6 +34,7 @@ export default function CustomerListPage() {
   // (i will wait at least 500 milliseconds after modyfing the field,
   // before fetching data again)
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Debounce search term with timeout
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function CustomerListPage() {
 
   useEffect(() => {
     const fetchCustomers = async () => {
+      setLoading(true);
       let url = "/api/customers/list";
       if (debouncedSearchTerm) {
         url = `/api/customers/list?SearchText=${encodeURIComponent(debouncedSearchTerm)}`;
@@ -60,6 +63,11 @@ export default function CustomerListPage() {
       } catch (error) {
         console.error("Error fetching customer list:", error);
         // Decide if display an error message to the user
+        // Clear list on error
+        setList([]);
+      } finally {
+        // Set loading to false
+        setLoading(false);
       }
     };
 
@@ -93,7 +101,6 @@ export default function CustomerListPage() {
 
     list.forEach((customer) => {
       xmlString += '  <Customer>\n';
-      // Apply escapeXml to each data field
       xmlString += `    <Id>${escapeXml(String(customer.id))}</Id>\n`;
       xmlString += `    <Name>${escapeXml(customer.name)}</Name>\n`;
       xmlString += `    <Address>${escapeXml(customer.address)}</Address>\n`;
@@ -116,6 +123,10 @@ export default function CustomerListPage() {
     URL.revokeObjectURL(url);
   }, [list, escapeXml]);
 
+  // Number of rows and columns for the skeleton table
+  const skeletonRowCount = 5; // Display 5 skeleton rows
+  const skeletonColumnCount = 5; // Number of columns in your table
+
   return (
     <>
       <Typography variant="h4" sx={{ textAlign: "center", mt: 4, mb: 4 }}>
@@ -132,13 +143,15 @@ export default function CustomerListPage() {
         <Button
           variant="contained"
           onClick={exportToXml}
+          // while loading data, export button is disabled
+          disabled={loading}
         >
           Export to XML
         </Button>
       </Box>
 
       <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <Table sx={{ minWidth: 650 }} aria-label="customer table">
           <TableHead>
             <TableRow>
               <StyledTableHeadCell>Name</StyledTableHeadCell>
@@ -149,18 +162,37 @@ export default function CustomerListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {list.map((row) => (
-              <TableRow
-                key={row.id}
-                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-              >
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.address}</TableCell>
-                <TableCell>{row.email}</TableCell>
-                <TableCell>{row.phone}</TableCell>
-                <TableCell>{row.iban}</TableCell>
-              </TableRow>
-            ))}
+            {loading ? (
+              Array.from(new Array(skeletonRowCount)).map((_, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {Array.from(new Array(skeletonColumnCount)).map((_, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <Skeleton variant="text" width="80%" height={20} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              list.map((row) => (
+                <TableRow
+                  key={row.id}
+                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                >
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.address}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>{row.phone}</TableCell>
+                  <TableCell>{row.iban}</TableCell>
+                </TableRow>
+              ))
+            )}
+            {!loading && list.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={skeletonColumnCount} sx={{ textAlign: 'center', py: 3 }}>
+                        No customers found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
