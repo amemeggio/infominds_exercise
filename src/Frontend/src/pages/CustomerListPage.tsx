@@ -10,8 +10,10 @@ import {
   styled,
   tableCellClasses,
   Button,
+  TextField,
+  Box,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface CustomerListQuery {
   id: number;
@@ -24,19 +26,49 @@ interface CustomerListQuery {
 
 export default function CustomerListPage() {
   const [list, setList] = useState<CustomerListQuery[]>([]);
+  // react state to keep search term
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  // react state to set debounced search term and avoid calling api
+  // to get customer list immediately after modifying search term field.
+  // (i will wait at least 500 milliseconds after modyfing the field,
+  // before fetching data again)
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+
+  // Debounce search term with timeout
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchTerm]);
+
 
   useEffect(() => {
-    fetch("/api/customers/list")
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
+    const fetchCustomers = async () => {
+      let url = "/api/customers/list";
+      if (debouncedSearchTerm) {
+        url = `/api/customers/list?SearchText=${encodeURIComponent(debouncedSearchTerm)}`;
+      }
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
         setList(data as CustomerListQuery[]);
-      })
-  }, []);
+      } catch (error) {
+        console.error("Error fetching customer list:", error);
+        // Decide if display an error message to the user
+      }
+    };
+
+    fetchCustomers();
+  }, [debouncedSearchTerm]);
 
   // function to escape 'special' XML characters
-  const escapeXml = (unsafe: string): string => {
+  // (with useCallback to memoize the function)
+  const escapeXml = useCallback((unsafe: string): string => {
     return unsafe.replace(/[<>&'"]/g, function (c) {
       switch (c) {
         case '<': return '&lt;';
@@ -47,10 +79,11 @@ export default function CustomerListPage() {
         default: return c;
       }
     });
-  };
+  }, []);
 
   // function to export xml with data from list
-  const exportToXml = () => {
+  // (with useCallback to memoize the function)
+  const exportToXml = useCallback(() => {
     if (list.length === 0) {
       alert("No data to export.");
       return;
@@ -81,21 +114,28 @@ export default function CustomerListPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
+  }, [list, escapeXml]);
 
   return (
     <>
       <Typography variant="h4" sx={{ textAlign: "center", mt: 4, mb: 4 }}>
         Customers
       </Typography>
-
-      <Button
-        variant="contained"
-        onClick={exportToXml}
-        sx={{ mb: 2, ml: 2 }}
-      >
-        Export to XML
-      </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, mx: 2 }}>
+        <TextField
+          label="Search Customers (Name or Email)"
+          variant="outlined"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ width: 'auto', flexGrow: 1, mr: 2 }}
+        />
+        <Button
+          variant="contained"
+          onClick={exportToXml}
+        >
+          Export to XML
+        </Button>
+      </Box>
 
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
