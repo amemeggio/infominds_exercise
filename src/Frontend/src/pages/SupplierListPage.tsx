@@ -9,6 +9,7 @@ import {
   Typography,
   styled,
   tableCellClasses,
+  Skeleton,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
@@ -22,16 +23,34 @@ interface SupplierListQuery {
 
 export default function SupplierListPage() {
   const [list, setList] = useState<SupplierListQuery[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    fetch("/api/suppliers/list")
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
+  useEffect(() => {    
+      const fetchSuppliers = async () => {
+      setLoading(true);
+      const url = "/api/suppliers/list";
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
         setList(data as SupplierListQuery[]);
-      });
+      } catch (error) {
+        console.error("Error fetching customer list:", error);
+        // Decide if display an error message to the user
+        // Clear list on error
+        setList([]);
+      } finally {
+        // Set loading to false
+        setLoading(false);
+      }
+    };
+
+    fetchSuppliers();
   }, []);
+
+  // Number of rows and columns for the skeleton table
+  const skeletonRowCount = 4;
+  const skeletonColumnCount = 4;
 
   return (
     <>
@@ -50,17 +69,36 @@ export default function SupplierListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {list.map((row) => (
-              <TableRow
-                key={row.id}
-                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-              >
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.address}</TableCell>
-                <TableCell>{row.email}</TableCell>
-                <TableCell>{row.phone}</TableCell>
-              </TableRow>
-            ))}
+            {loading ? (
+              Array.from(new Array(skeletonRowCount)).map((_, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {Array.from(new Array(skeletonColumnCount)).map((_, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <Skeleton variant="text" width="80%" height={20} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              list.map((row) => (
+                <TableRow
+                  key={row.id}
+                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                >
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.address}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>{row.phone}</TableCell>
+                </TableRow>
+              ))
+            )}
+            {!loading && list.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={skeletonColumnCount} sx={{ textAlign: 'center', py: 3 }}>
+                        No suppliers found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>

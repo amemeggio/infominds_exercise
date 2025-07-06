@@ -124,8 +124,8 @@ export default function CustomerListPage() {
   }, [list, escapeXml]);
 
   // Number of rows and columns for the skeleton table
-  const skeletonRowCount = 5; // Display 5 skeleton rows
-  const skeletonColumnCount = 5; // Number of columns in your table
+  const skeletonRowCount = 5;
+  const skeletonColumnCount = 5;
 
   return (
     <>
