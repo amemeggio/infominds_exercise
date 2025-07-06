@@ -12,9 +12,10 @@ import {
   Button,
   TextField,
   Box,
-  Skeleton,
 } from "@mui/material";
 import { useEffect, useState, useCallback } from "react";
+import { SkeletonTableRows } from "../components/SkeletonTableRows";
+import { EmptyTableRows } from "../components/EmptyTableRows";
 
 interface CustomerListQuery {
   id: number;
@@ -163,15 +164,10 @@ export default function CustomerListPage() {
           </TableHead>
           <TableBody>
             {loading ? (
-              Array.from(new Array(skeletonRowCount)).map((_, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {Array.from(new Array(skeletonColumnCount)).map((_, colIndex) => (
-                    <TableCell key={colIndex}>
-                      <Skeleton variant="text" width="80%" height={20} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              <SkeletonTableRows
+                skeletonRowCount={skeletonRowCount}
+                skeletonColumnCount={skeletonColumnCount}
+              />
             ) : (
               list.map((row) => (
                 <TableRow
@@ -187,11 +183,10 @@ export default function CustomerListPage() {
               ))
             )}
             {!loading && list.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={skeletonColumnCount} sx={{ textAlign: 'center', py: 3 }}>
-                        No customers found.
-                    </TableCell>
-                </TableRow>
+              <EmptyTableRows
+                colspan={skeletonColumnCount}
+                noDataFoundMessage={"No customers found."}
+              />
             )}
           </TableBody>
         </Table>

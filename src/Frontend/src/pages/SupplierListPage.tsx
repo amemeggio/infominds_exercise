@@ -9,9 +9,10 @@ import {
   Typography,
   styled,
   tableCellClasses,
-  Skeleton,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { SkeletonTableRows } from "../components/SkeletonTableRows";
+import { EmptyTableRows } from "../components/EmptyTableRows";
 
 interface SupplierListQuery {
   id: number;
@@ -70,15 +71,10 @@ export default function SupplierListPage() {
           </TableHead>
           <TableBody>
             {loading ? (
-              Array.from(new Array(skeletonRowCount)).map((_, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {Array.from(new Array(skeletonColumnCount)).map((_, colIndex) => (
-                    <TableCell key={colIndex}>
-                      <Skeleton variant="text" width="80%" height={20} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              <SkeletonTableRows
+                skeletonRowCount={skeletonRowCount}
+                skeletonColumnCount={skeletonColumnCount}
+              />
             ) : (
               list.map((row) => (
                 <TableRow
@@ -93,11 +89,10 @@ export default function SupplierListPage() {
               ))
             )}
             {!loading && list.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={skeletonColumnCount} sx={{ textAlign: 'center', py: 3 }}>
-                        No suppliers found.
-                    </TableCell>
-                </TableRow>
+              <EmptyTableRows
+                colspan={skeletonColumnCount}
+                noDataFoundMessage={"No suppliers found."}
+              />
             )}
           </TableBody>
         </Table>
