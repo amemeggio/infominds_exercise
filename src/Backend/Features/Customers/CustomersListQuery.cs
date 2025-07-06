@@ -7,6 +7,8 @@ public class CustomerListQuery : IRequest<List<CustomerListQueryResponse>>
 {
     public string? Name { get; set; }
     public string? Email { get; set; }
+
+    public string? SearchText { get; set; }
 }
 
 public class CustomerListQueryResponse
@@ -33,6 +35,18 @@ internal class CustomerListQueryHandler(BackendContext context) : IRequestHandle
     public async Task<List<CustomerListQueryResponse>> Handle(CustomerListQuery request, CancellationToken cancellationToken)
     {
         var query = context.Customers.AsQueryable();
+
+        // Apply SearchText filter if provided.
+        // (maintained additional Name and Email filters
+        // if i want to implement filters for those specific fields in future)
+        if (!string.IsNullOrEmpty(request.SearchText))
+        {
+            var lowerSearchText = request.SearchText.ToLower();
+            query = query.Where(q =>
+                q.Name.ToLower().Contains(lowerSearchText) ||
+                q.Email.ToLower().Contains(lowerSearchText)
+            );
+        }
 
         // Apply Name filter if provided
         if (!string.IsNullOrEmpty(request.Name))
