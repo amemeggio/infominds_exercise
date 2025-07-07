@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { SkeletonTableRows } from "../components/SkeletonTableRows";
 import { EmptyTableRows } from "../components/EmptyTableRows";
+import { SnackbarError } from "../components/SnackBarError";
 
 interface SupplierListQuery {
   id: number;
@@ -25,19 +26,29 @@ interface SupplierListQuery {
 export default function SupplierListPage() {
   const [list, setList] = useState<SupplierListQuery[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
 
   useEffect(() => {    
       const fetchSuppliers = async () => {
       setLoading(true);
+      setError(null);
+      setSnackbarOpen(false);
       const url = "/api/suppliers/list";
 
       try {
         const response = await fetch(url);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(`Failed to fetch suppliers: ${response.status} ${response.statusText} - ${errorData.message || 'Server error'}`);
+        }
         const data = await response.json();
         setList(data as SupplierListQuery[]);
       } catch (error) {
-        console.error("Error fetching customer list:", error);
-        // Decide if display an error message to the user
+        console.error("Error fetching suppliers list:", error);
+        setError("Error fetching suppliers list.");
+        // Open Snackbar on error
+        setSnackbarOpen(true);
         // Clear list on error
         setList([]);
       } finally {
@@ -48,6 +59,14 @@ export default function SupplierListPage() {
 
     fetchSuppliers();
   }, []);
+
+  // Handle Snackbar close event
+  const handleSnackbarClose = () => {
+    // hide SnackBar
+    setSnackbarOpen(false);
+    // Clear error message when snackbar closes
+    setError(null);
+  };
 
   // Number of rows and columns for the skeleton table
   const skeletonRowCount = 4;
@@ -97,6 +116,11 @@ export default function SupplierListPage() {
           </TableBody>
         </Table>
       </TableContainer>
+      <SnackbarError
+        snackbarOpen={snackbarOpen}
+        handleSnackbarClose={handleSnackbarClose}
+        errorTxt={error}
+      />
     </>
   );
 }

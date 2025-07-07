@@ -12,12 +12,11 @@ import {
   Button,
   TextField,
   Box,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { useEffect, useState, useCallback } from "react";
 import { SkeletonTableRows } from "../components/SkeletonTableRows";
 import { EmptyTableRows } from "../components/EmptyTableRows";
+import { SnackbarError } from "../components/SnackBarError";
 
 interface CustomerListQuery {
   id: number;
@@ -71,8 +70,8 @@ export default function CustomerListPage() {
         const data = await response.json();
         setList(data as CustomerListQuery[]);
       } catch (error) {
-        console.error("Error fetching customer list:", error);
-        setError("Error fetching customer list.");
+        console.error("Error fetching customers list:", error);
+        setError("Error fetching customers list.");
         // Open Snackbar on error
         setSnackbarOpen(true);
         // Clear list on error
@@ -210,22 +209,11 @@ export default function CustomerListPage() {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={5000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity="error"
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {error}
-        </Alert>
-      </Snackbar>
+      <SnackbarError
+        snackbarOpen={snackbarOpen}
+        handleSnackbarClose={handleSnackbarClose}
+        errorTxt={error}
+      />
     </>
   );
 }
