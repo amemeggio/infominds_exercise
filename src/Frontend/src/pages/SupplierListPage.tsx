@@ -25,8 +25,11 @@ interface SupplierListQuery {
 
 export default function SupplierListPage() {
   const [list, setList] = useState<SupplierListQuery[]>([]);
+  // react state to check if page is still fetching data and show skeleton table
   const [loading, setLoading] = useState<boolean>(true);
+  // react state to store error text message and show it in snackbar
   const [error, setError] = useState<string | null>(null);
+  // react state to show error snackbar
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
 
   useEffect(() => {    

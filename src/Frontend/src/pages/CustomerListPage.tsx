@@ -33,11 +33,14 @@ export default function CustomerListPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   // react state to set debounced search term and avoid calling api
   // to get customer list immediately after modifying search term field.
-  // (i will wait at least 500 milliseconds after modyfing the field,
+  // (i will wait at least 500 milliseconds after modifying the field,
   // before fetching data again)
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+  // react state to check if page is still fetching data and show skeleton table
   const [loading, setLoading] = useState<boolean>(true);
+  // react state to store error text message and show it in snackbar
   const [error, setError] = useState<string | null>(null);
+  // react state to show error snackbar
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
 
   // Debounce search term with timeout
